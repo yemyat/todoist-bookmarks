@@ -1,0 +1,21 @@
+{
+  "name": "todoist-bookmark-agent",
+  "module": "index.ts",
+  "type": "module",
+  "scripts": {
+    "dev": "convex dev",
+    "deploy": "convex deploy"
+  },
+  "devDependencies": {
+    "@types/bun": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^5.0.0"
+  },
+  "dependencies": {
+    "@ai-sdk/google": "^2.0.49",
+    "@mendable/firecrawl-js": "^4.9.3",
+    "ai": "^5.0.115",
+    "convex": "^1.31.2"
+  }
+}
