@@ -4,6 +4,89 @@ import { internal } from "./_generated/api";
 
 const http = httpRouter();
 
+// OAuth Step 1: Redirect user to Todoist authorization page
+http.route({
+  path: "/oauth/todoist/authorize",
+  method: "GET",
+  handler: httpAction(async (ctx, request) => {
+    const url = new URL(request.url);
+    const redirectUri = `${url.origin}/oauth/todoist/callback`;
+
+    const { url: authUrl } = await ctx.runAction(internal.bookmarks.getOAuthUrl, {
+      redirectUri,
+    });
+
+    return new Response(null, {
+      status: 302,
+      headers: { Location: authUrl },
+    });
+  }),
+});
+
+// OAuth Step 2: Handle callback and exchange code for token
+http.route({
+  path: "/oauth/todoist/callback",
+  method: "GET",
+  handler: httpAction(async (ctx, request) => {
+    const url = new URL(request.url);
+    const code = url.searchParams.get("code");
+    const error = url.searchParams.get("error");
+
+    if (error) {
+      return new Response(`OAuth error: ${error}`, {
+        status: 400,
+        headers: { "Content-Type": "text/html" },
+      });
+    }
+
+    if (!code) {
+      return new Response("Missing authorization code", {
+        status: 400,
+        headers: { "Content-Type": "text/html" },
+      });
+    }
+
+    const redirectUri = `${url.origin}/oauth/todoist/callback`;
+
+    try {
+      const { accessToken, tokenType, todoistUserId, fullName } = await ctx.runAction(
+        internal.bookmarks.exchangeCodeForToken,
+        { code, redirectUri }
+      );
+
+      // Store the user's token in the database
+      await ctx.runMutation(internal.users.upsertTodoistUser, {
+        todoistUserId,
+        accessToken,
+        tokenType,
+      });
+
+      return new Response(
+        `<!DOCTYPE html>
+<html>
+<head><title>Todoist Authorization Successful</title></head>
+<body style="font-family: system-ui; max-width: 600px; margin: 40px auto; padding: 20px;">
+  <h1>✅ Authorization Successful!</h1>
+  <p>Welcome, <strong>${fullName}</strong>!</p>
+  <p>Your Todoist account has been connected. Webhooks are now active for your account.</p>
+  <p style="color: #666; font-size: 14px;">You can close this window.</p>
+</body>
+</html>`,
+        {
+          status: 200,
+          headers: { "Content-Type": "text/html" },
+        }
+      );
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Unknown error";
+      return new Response(`OAuth token exchange failed: ${message}`, {
+        status: 500,
+        headers: { "Content-Type": "text/html" },
+      });
+    }
+  }),
+});
+
 http.route({
   path: "/webhook/todoist",
   method: "POST",
@@ -32,8 +115,8 @@ http.route({
       return new Response("Invalid JSON", { status: 400 });
     }
 
-    const { event_name, event_data } = body;
-    if (!event_name || !event_data?.id || !event_data?.project_id) {
+    const { event_name, event_data, user_id } = body;
+    if (!event_name || !event_data?.id || !event_data?.project_id || !user_id) {
       return new Response("Missing fields", { status: 400 });
     }
 
@@ -44,6 +127,7 @@ http.route({
       content: event_data.content || "",
       description: event_data.description || "",
       projectId: event_data.project_id,
+      userId: String(user_id),
     });
 
     return new Response("OK", { status: 200 });
