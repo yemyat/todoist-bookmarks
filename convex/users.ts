@@ -44,3 +44,37 @@ export const getAccessTokenByUserId = internalQuery({
     return user?.accessToken ?? null;
   },
 });
+
+export const getBookmarkByTaskId = internalQuery({
+  args: {
+    todoistTaskId: v.string(),
+  },
+  handler: async (ctx, args) => {
+    return await ctx.db
+      .query("bookmarks")
+      .withIndex("by_todoist_task_id", (q) => q.eq("todoistTaskId", args.todoistTaskId))
+      .unique();
+  },
+});
+
+export const saveBookmark = internalMutation({
+  args: {
+    todoistUserId: v.string(),
+    todoistTaskId: v.string(),
+    url: v.string(),
+    title: v.string(),
+    content: v.string(),
+    summary: v.string(),
+  },
+  handler: async (ctx, args) => {
+    return await ctx.db.insert("bookmarks", {
+      todoistUserId: args.todoistUserId,
+      todoistTaskId: args.todoistTaskId,
+      url: args.url,
+      title: args.title,
+      content: args.content,
+      summary: args.summary,
+      scrapedAt: Date.now(),
+    });
+  },
+});

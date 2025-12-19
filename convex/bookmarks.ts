@@ -1,6 +1,7 @@
 "use node";
 
 import { internalAction } from "./_generated/server";
+import { internal } from "./_generated/api";
 import { v } from "convex/values";
 import { createHmac } from "crypto";
 import Firecrawl from "@mendable/firecrawl-js";
@@ -35,8 +36,9 @@ export const processNewTask = internalAction({
     description: v.string(),
     projectId: v.string(),
     accessToken: v.string(),
+    todoistUserId: v.string(),
   },
-  handler: async (_ctx, args) => {
+  handler: async (ctx, args) => {
     if (args.projectId !== TODOIST_PROJECT_ID) return;
     if (args.description.includes(PROCESSED_MARKER)) return;
 
@@ -76,6 +78,16 @@ REMEMBER: ALWAYS START WITH TLDR; Do not include any other fluff.
         prompt: `Summarize this article in 4-5 short paragraphs. Focus on key insights.\n\nTitle: ${title}\n\nContent:\n${markdown}`,
       });
 
+      // Save to database
+      await ctx.runMutation(internal.users.saveBookmark, {
+        todoistUserId: args.todoistUserId,
+        todoistTaskId: args.taskId,
+        url,
+        title,
+        content: markdown,
+        summary,
+      });
+
       await todoistRequest(args.accessToken, `tasks/${args.taskId}`, "POST", {
         content: title,
         description: `${PROCESSED_MARKER}\n\n${summary}\n\n---\n🔗 ${url}`,
@@ -106,6 +118,61 @@ export const handleTaskCompleted = internalAction({
       content: args.content,
       description: args.description,
       project_id: args.projectId,
+    });
+  },
+});
+
+const AGENT_MARKER = "🤖";
+
+export const processNote = internalAction({
+  args: {
+    noteId: v.string(),
+    taskId: v.string(),
+    content: v.string(),
+    accessToken: v.string(),
+  },
+  handler: async (ctx, args) => {
+    // Skip if this is an agent reply (prevents infinite loop)
+    if (args.content.includes(AGENT_MARKER)) return;
+
+    // Look up the task in our bookmarks database
+    const bookmark = await ctx.runQuery(internal.users.getBookmarkByTaskId, {
+      todoistTaskId: args.taskId,
+    });
+
+    if (!bookmark) {
+      await todoistRequest(args.accessToken, "comments", "POST", {
+        task_id: args.taskId,
+        content: `${AGENT_MARKER} No bookmark found for this task.`,
+      });
+      return;
+    }
+
+    // Generate answer based on bookmark content
+    const { text: answer } = await generateText({
+      model: google("gemini-2.0-flash"),
+      system: `You are a helpful assistant answering questions about a saved article.
+
+Article Title: ${bookmark.title}
+Article URL: ${bookmark.url}
+
+Article Summary:
+${bookmark.summary}
+
+Full Article Content:
+${bookmark.content}
+
+Instructions:
+- Answer the user's question based on the article content above
+- Be concise and direct
+- If the answer isn't in the article, say so
+- Use conversational English`,
+      prompt: args.content,
+    });
+
+    await todoistRequest(args.accessToken, "comments", "POST", {
+      task_id: args.taskId,
+      content: `${AGENT_MARKER} ${answer}`,
     });
   },
 });

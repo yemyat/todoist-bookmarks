@@ -29,6 +29,7 @@ export const scheduleProcessing = internalMutation({
         description: args.description,
         projectId: args.projectId,
         accessToken,
+        todoistUserId: args.userId,
       });
       return;
     }
@@ -44,5 +45,31 @@ export const scheduleProcessing = internalMutation({
     }
 
     console.warn(`Unhandled event: ${args.eventName}`);
+  },
+});
+
+export const scheduleNoteProcessing = internalMutation({
+  args: {
+    noteId: v.string(),
+    taskId: v.string(),
+    content: v.string(),
+    userId: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const accessToken = await ctx.runQuery(internal.users.getAccessTokenByUserId, {
+      todoistUserId: args.userId,
+    });
+
+    if (!accessToken) {
+      console.warn(`No access token found for user ${args.userId}. User needs to authorize.`);
+      return;
+    }
+
+    await ctx.scheduler.runAfter(0, internal.bookmarks.processNote, {
+      noteId: args.noteId,
+      taskId: args.taskId,
+      content: args.content,
+      accessToken,
+    });
   },
 });

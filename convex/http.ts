@@ -116,8 +116,27 @@ http.route({
     }
 
     const { event_name, event_data, user_id } = body;
-    if (!event_name || !event_data?.id || !event_data?.project_id || !user_id) {
+    if (!event_name || !event_data || !user_id) {
       return new Response("Missing fields", { status: 400 });
+    }
+
+    // Handle note:added events (comments on tasks)
+    if (event_name === "note:added") {
+      if (!event_data.item_id) {
+        return new Response("Missing item_id for note event", { status: 400 });
+      }
+      await ctx.runMutation(internal.scheduler.scheduleNoteProcessing, {
+        noteId: event_data.id,
+        taskId: event_data.item_id,
+        content: event_data.content || "",
+        userId: String(user_id),
+      });
+      return new Response("OK", { status: 200 });
+    }
+
+    // Handle item events (tasks)
+    if (!event_data.id || !event_data.project_id) {
+      return new Response("Missing fields for item event", { status: 400 });
     }
 
     // Schedule processing in background via mutation (returns immediately)
