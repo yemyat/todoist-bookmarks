@@ -78,13 +78,14 @@ REMEMBER: ALWAYS START WITH TLDR; Do not include any other fluff.
       });
 
       // Save to database
-      await ctx.runMutation(internal.users.saveBookmark, {
+      await ctx.runMutation(internal.users.saveTask, {
         todoistUserId: args.todoistUserId,
         todoistTaskId: args.taskId,
-        url,
+        type: "bookmark",
         title,
         content: markdown,
-        summary,
+        aiResponse: summary,
+        url,
       });
 
       await todoistRequest(args.accessToken, `tasks/${args.taskId}`, "POST", {
@@ -133,32 +134,32 @@ export const processNote = internalAction({
     // Skip if this is an agent reply (prevents infinite loop)
     if (args.content.includes(AGENT_MARKER)) return;
 
-    // Look up the task in our bookmarks database
-    const bookmark = await ctx.runQuery(internal.users.getBookmarkByTaskId, {
+    // Look up the task in our database
+    const task = await ctx.runQuery(internal.users.getTaskByTodoistId, {
       todoistTaskId: args.taskId,
     });
 
-    if (!bookmark) {
+    if (!task) {
       await todoistRequest(args.accessToken, "comments", "POST", {
         task_id: args.taskId,
-        content: `${AGENT_MARKER} No bookmark found for this task.`,
+        content: `${AGENT_MARKER} No saved task found.`,
       });
       return;
     }
 
-    // Generate answer based on bookmark content
+    // Generate answer based on task content
     const { text: answer } = await generateText({
       model: google("gemini-2.0-flash"),
-      system: `You are a helpful assistant answering questions about a saved article.
+      system: `You are a helpful assistant answering questions about a saved ${task.type === "bookmark" ? "article" : "idea"}.
 
-Article Title: ${bookmark.title}
-Article URL: ${bookmark.url}
+Title: ${task.title}
+${task.url ? `URL: ${task.url}` : ""}
 
-Article Summary:
-${bookmark.summary}
+AI Summary/Report:
+${task.aiResponse}
 
-Full Article Content:
-${bookmark.content}
+Full Content:
+${task.content}
 
 Instructions:
 - Answer the user's question based on the article content above

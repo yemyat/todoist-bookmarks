@@ -45,56 +45,38 @@ export const getAccessTokenByUserId = internalQuery({
   },
 });
 
-export const getBookmarkByTaskId = internalQuery({
+export const getTaskByTodoistId = internalQuery({
   args: {
     todoistTaskId: v.string(),
   },
   handler: async (ctx, args) => {
     return await ctx.db
-      .query("bookmarks")
+      .query("tasks")
       .withIndex("by_todoist_task_id", (q) => q.eq("todoistTaskId", args.todoistTaskId))
       .unique();
   },
 });
 
-export const saveBookmark = internalMutation({
+export const saveTask = internalMutation({
   args: {
     todoistUserId: v.string(),
     todoistTaskId: v.string(),
-    url: v.string(),
+    type: v.union(v.literal("bookmark"), v.literal("idea")),
     title: v.string(),
     content: v.string(),
-    summary: v.string(),
+    aiResponse: v.string(),
+    url: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    return await ctx.db.insert("bookmarks", {
+    return await ctx.db.insert("tasks", {
       todoistUserId: args.todoistUserId,
       todoistTaskId: args.todoistTaskId,
-      url: args.url,
+      type: args.type,
       title: args.title,
       content: args.content,
-      summary: args.summary,
-      scrapedAt: Date.now(),
-    });
-  },
-});
-
-export const saveIdea = internalMutation({
-  args: {
-    todoistUserId: v.string(),
-    todoistTaskId: v.string(),
-    content: v.string(),
-    description: v.string(),
-    report: v.string(),
-  },
-  handler: async (ctx, args) => {
-    return await ctx.db.insert("ideas", {
-      todoistUserId: args.todoistUserId,
-      todoistTaskId: args.todoistTaskId,
-      content: args.content,
-      description: args.description,
-      report: args.report,
-      savedAt: Date.now(),
+      aiResponse: args.aiResponse,
+      url: args.url,
+      processedAt: Date.now(),
     });
   },
 });

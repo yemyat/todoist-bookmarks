@@ -22,7 +22,7 @@ export const processNewIdea = internalAction({
   handler: async (ctx, args) => {
     if (args.description.includes(PROCESSED_MARKER)) return;
 
-    const ideaText = args.description || args.content;
+    const ideaText = `${args.content}\n${args.description}`;
 
     try {
       await todoistRequest(args.accessToken, `tasks/${args.taskId}`, "POST", {
@@ -89,12 +89,13 @@ ${ideaText}
       });
 
       // Save to database
-      await ctx.runMutation(internal.users.saveIdea, {
+      await ctx.runMutation(internal.users.saveTask, {
         todoistUserId: args.todoistUserId,
         todoistTaskId: args.taskId,
-        content: args.content,
-        description: args.description,
-        report,
+        type: "idea",
+        title: args.content,
+        content: args.description,
+        aiResponse: report,
       });
 
       await todoistRequest(args.accessToken, `tasks/${args.taskId}`, "POST", {

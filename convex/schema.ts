@@ -10,28 +10,20 @@ export default defineSchema({
     authorizedAt: v.number(), // Timestamp when authorized
   }).index("by_todoist_user_id", ["todoistUserId"]),
 
-  // Stores processed bookmark data
-  bookmarks: defineTable({
+  // Unified table for all processed Todoist tasks
+  tasks: defineTable({
     todoistUserId: v.string(),
     todoistTaskId: v.string(),
-    url: v.string(),
+    type: v.union(v.literal("bookmark"), v.literal("idea")),
+    // Common fields
     title: v.string(),
-    content: v.string(), // Full scraped markdown
-    summary: v.string(), // AI-generated summary
-    scrapedAt: v.number(),
+    content: v.string(), // Scraped markdown for bookmarks, original description for ideas
+    aiResponse: v.string(), // Summary for bookmarks, feasibility report for ideas
+    processedAt: v.number(),
+    // Bookmark-specific (optional)
+    url: v.optional(v.string()),
   })
     .index("by_todoist_user_id", ["todoistUserId"])
-    .index("by_todoist_task_id", ["todoistTaskId"]),
-
-  // Stores ideas from the ideas project
-  ideas: defineTable({
-    todoistUserId: v.string(),
-    todoistTaskId: v.string(),
-    content: v.string(), // Task title/content
-    description: v.string(), // Task description
-    report: v.string(), // AI-generated feasibility report
-    savedAt: v.number(),
-  })
-    .index("by_todoist_user_id", ["todoistUserId"])
-    .index("by_todoist_task_id", ["todoistTaskId"]),
+    .index("by_todoist_task_id", ["todoistTaskId"])
+    .index("by_type", ["type"]),
 });
