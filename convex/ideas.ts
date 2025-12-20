@@ -6,6 +6,8 @@ import { v } from "convex/values";
 import { generateText, stepCountIs } from "ai";
 import { google } from "@ai-sdk/google";
 import { searchTool, extractTool } from '@parallel-web/ai-sdk-tools';
+import { todoistRequest } from "./utils";
+
 const PROCESSED_MARKER = "🤖 Feasibility Report";
 
 export const processNewIdea = internalAction({
@@ -38,7 +40,7 @@ export const processNewIdea = internalAction({
           'web-extract': extractTool,
         },
         stopWhen: stepCountIs(20),
-        system: `You are a startup advisor and technical consultant. You help entrepreneurs quickly validate ideas by providing concise feasibility reports.
+        system: `You are a startup advisor and partner at YCombinator. You help entrepreneurs quickly validate ideas by providing concise feasibility reports.
 
 Your report format (use TL;DR point-by-point style):
 
@@ -48,7 +50,17 @@ Your report format (use TL;DR point-by-point style):
 
 ## Time to MVP
 - Estimate realistic time to build a minimum viable product
+- Note that the user is an expert AI coding agent user so no such thing is taking multiple weeks
 - Break down by phase (e.g., "2 weeks design, 4 weeks dev")
+
+## Potential market size
+- Think like YC. What is the total market size
+
+## What are the l business models?
+- Be innovative here.
+
+## What is the potential go to market
+- Include channels, strateies and potential cost
 
 ## How to Build It
 - Key technical components needed
@@ -69,7 +81,7 @@ Your report format (use TL;DR point-by-point style):
 - You have access to useful web search tools.
 
 Keep each point brief and actionable. Use conversational English. Be honest about challenges.`,
-        prompt: `Analyze this idea and provide a feasibility report.
+        prompt: `Analyze this idea and provide a feasibility report. Use  the web to perform deep research before preparing the report.
 
 IDEA:
 ${ideaText}
@@ -117,26 +129,4 @@ export const handleIdeaCompleted = internalAction({
   },
 });
 
-async function todoistRequest(
-  accessToken: string,
-  endpoint: string,
-  method: string,
-  body?: object
-): Promise<any> {
-  const response = await fetch(`https://api.todoist.com/rest/v2/${endpoint}`, {
-    method,
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-      "Content-Type": "application/json",
-    },
-    body: body ? JSON.stringify(body) : undefined,
-  });
 
-  if (!response.ok) {
-    throw new Error(`Todoist API error: ${response.status}`);
-  }
-
-  if (method === "GET" || response.headers.get("content-type")?.includes("application/json")) {
-    return response.json();
-  }
-}
