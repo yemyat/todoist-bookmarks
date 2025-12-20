@@ -11,7 +11,6 @@ import { google } from "@ai-sdk/google";
 const URL_REGEX = /https?:\/\/[^\s<>"{}|\\^`\[\]]+/gi;
 const TODOIST_CLIENT_ID = process.env.TODOIST_CLIENT_ID!;
 const TODOIST_CLIENT_SECRET = process.env.TODOIST_CLIENT_SECRET!;
-const TODOIST_PROJECT_ID = process.env.TODOIST_PROJECT_ID!;
 const FIRECRAWL_API_KEY = process.env.FIRECRAWL_API_KEY!;
 const PROCESSED_MARKER = "🤖 Summary";
 
@@ -29,7 +28,7 @@ export const verifyWebhook = internalAction({
   },
 });
 
-export const processNewTask = internalAction({
+export const processNewBookmark = internalAction({
   args: {
     taskId: v.string(),
     content: v.string(),
@@ -39,7 +38,6 @@ export const processNewTask = internalAction({
     todoistUserId: v.string(),
   },
   handler: async (ctx, args) => {
-    if (args.projectId !== TODOIST_PROJECT_ID) return;
     if (args.description.includes(PROCESSED_MARKER)) return;
 
     const url =
@@ -110,7 +108,6 @@ export const handleTaskCompleted = internalAction({
     accessToken: v.string(),
   },
   handler: async (_ctx, args) => {
-    if (args.projectId !== TODOIST_PROJECT_ID) return;
     if (!args.description.includes(PROCESSED_MARKER)) return;
 
     // Create a new task with the same content/description but no due date

@@ -78,3 +78,23 @@ export const saveBookmark = internalMutation({
     });
   },
 });
+
+export const saveIdea = internalMutation({
+  args: {
+    todoistUserId: v.string(),
+    todoistTaskId: v.string(),
+    content: v.string(),
+    description: v.string(),
+    report: v.string(),
+  },
+  handler: async (ctx, args) => {
+    return await ctx.db.insert("ideas", {
+      todoistUserId: args.todoistUserId,
+      todoistTaskId: args.todoistTaskId,
+      content: args.content,
+      description: args.description,
+      report: args.report,
+      savedAt: Date.now(),
+    });
+  },
+});

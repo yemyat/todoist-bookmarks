@@ -10,6 +10,7 @@
 
 import type * as bookmarks from "../bookmarks.js";
 import type * as http from "../http.js";
+import type * as ideas from "../ideas.js";
 import type * as scheduler from "../scheduler.js";
 import type * as users from "../users.js";
 
@@ -22,6 +23,7 @@ import type {
 declare const fullApi: ApiFromModules<{
   bookmarks: typeof bookmarks;
   http: typeof http;
+  ideas: typeof ideas;
   scheduler: typeof scheduler;
   users: typeof users;
 }>;

@@ -2,6 +2,9 @@ import { internalMutation } from "./_generated/server";
 import { internal } from "./_generated/api";
 import { v } from "convex/values";
 
+const TODOIST_BOOKMARK_PROJECT_ID = process.env.TODOIST_BOOKMARK_PROJECT_ID!;
+const TODOIST_IDEA_PROJECT_ID = process.env.TODOIST_IDEA_PROJECT_ID!;
+
 export const scheduleProcessing = internalMutation({
   args: {
     eventName: v.string(),
@@ -22,25 +25,52 @@ export const scheduleProcessing = internalMutation({
       return;
     }
 
+    const isBookmarkProject = args.projectId === TODOIST_BOOKMARK_PROJECT_ID;
+    const isIdeaProject = args.projectId === TODOIST_IDEA_PROJECT_ID;
+
+    if (!isBookmarkProject && !isIdeaProject) {
+      return;
+    }
+
     if (args.eventName === "item:added") {
-      await ctx.scheduler.runAfter(0, internal.bookmarks.processNewTask, {
-        taskId: args.taskId,
-        content: args.content,
-        description: args.description,
-        projectId: args.projectId,
-        accessToken,
-        todoistUserId: args.userId,
-      });
+      if (isBookmarkProject) {
+        await ctx.scheduler.runAfter(0, internal.bookmarks.processNewBookmark, {
+          taskId: args.taskId,
+          content: args.content,
+          description: args.description,
+          projectId: args.projectId,
+          accessToken,
+          todoistUserId: args.userId,
+        });
+      } else if (isIdeaProject) {
+        await ctx.scheduler.runAfter(0, internal.ideas.processNewIdea, {
+          taskId: args.taskId,
+          content: args.content,
+          description: args.description,
+          projectId: args.projectId,
+          accessToken,
+          todoistUserId: args.userId,
+        });
+      }
       return;
     }
 
     if (args.eventName === "item:completed") {
-      await ctx.scheduler.runAfter(0, internal.bookmarks.handleTaskCompleted, {
-        content: args.content,
-        description: args.description,
-        projectId: args.projectId,
-        accessToken,
-      });
+      if (isBookmarkProject) {
+        await ctx.scheduler.runAfter(0, internal.bookmarks.handleTaskCompleted, {
+          content: args.content,
+          description: args.description,
+          projectId: args.projectId,
+          accessToken,
+        });
+      } else if (isIdeaProject) {
+        await ctx.scheduler.runAfter(0, internal.ideas.handleIdeaCompleted, {
+          content: args.content,
+          description: args.description,
+          projectId: args.projectId,
+          accessToken,
+        });
+      }
       return;
     }
 

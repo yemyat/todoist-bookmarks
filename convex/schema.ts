@@ -22,4 +22,16 @@ export default defineSchema({
   })
     .index("by_todoist_user_id", ["todoistUserId"])
     .index("by_todoist_task_id", ["todoistTaskId"]),
+
+  // Stores ideas from the ideas project
+  ideas: defineTable({
+    todoistUserId: v.string(),
+    todoistTaskId: v.string(),
+    content: v.string(), // Task title/content
+    description: v.string(), // Task description
+    report: v.string(), // AI-generated feasibility report
+    savedAt: v.number(),
+  })
+    .index("by_todoist_user_id", ["todoistUserId"])
+    .index("by_todoist_task_id", ["todoistTaskId"]),
 });
