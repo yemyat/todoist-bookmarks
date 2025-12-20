@@ -3,7 +3,7 @@
 import { internalAction } from "./_generated/server";
 import { internal } from "./_generated/api";
 import { v } from "convex/values";
-import { generateText } from "ai";
+import { generateText, stepCountIs } from "ai";
 import { google } from "@ai-sdk/google";
 import { searchTool, extractTool } from '@parallel-web/ai-sdk-tools';
 const PROCESSED_MARKER = "🤖 Feasibility Report";
@@ -37,6 +37,7 @@ export const processNewIdea = internalAction({
           'web-search': searchTool,
           'web-extract': extractTool,
         },
+        stopWhen: stepCountIs(20),
         system: `You are a startup advisor and technical consultant. You help entrepreneurs quickly validate ideas by providing concise feasibility reports.
 
 Your report format (use TL;DR point-by-point style):
