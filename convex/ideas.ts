@@ -8,8 +8,9 @@ import { google } from "@ai-sdk/google";
 import { searchTool, extractTool } from "@parallel-web/ai-sdk-tools";
 import { TodoistApi } from "@doist/todoist-api-typescript";
 import { customFetch } from "./todoist";
+import { AGENT_MARKER } from "./shared";
 
-const PROCESSED_MARKER = "🤖 Feasibility Report";
+const PROCESSED_MARKER = `${AGENT_MARKER} Feasibility Report`;
 
 export const processNewIdea = internalAction({
   args: {

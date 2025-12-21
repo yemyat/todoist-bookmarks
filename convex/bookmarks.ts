@@ -8,10 +8,11 @@ import { generateText } from "ai";
 import { google } from "@ai-sdk/google";
 import { TodoistApi } from "@doist/todoist-api-typescript";
 import { customFetch } from "./todoist";
+import { AGENT_MARKER } from "./shared";
 
 const URL_REGEX = /https?:\/\/[^\s<>"{}|\\^`\[\]]+/gi;
 const FIRECRAWL_API_KEY = process.env.FIRECRAWL_API_KEY!;
-const PROCESSED_MARKER = "🤖 Summary";
+const PROCESSED_MARKER = `${AGENT_MARKER} Summary`;
 
 export const processNewBookmark = internalAction({
   args: {

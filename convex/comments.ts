@@ -7,8 +7,7 @@ import { generateText } from "ai";
 import { google } from "@ai-sdk/google";
 import { TodoistApi } from "@doist/todoist-api-typescript";
 import { customFetch } from "./todoist";
-
-const AGENT_MARKER = "🤖";
+import { AGENT_MARKER } from "./shared";
 
 export const processComment = internalAction({
   args: {
