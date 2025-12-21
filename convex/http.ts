@@ -12,7 +12,7 @@ http.route({
     const url = new URL(request.url);
     const redirectUri = `${url.origin}/oauth/todoist/callback`;
 
-    const { url: authUrl } = await ctx.runAction(internal.bookmarks.getOAuthUrl, {
+    const { url: authUrl } = await ctx.runAction(internal.todoist.getOAuthUrl, {
       redirectUri,
     });
 
@@ -50,7 +50,7 @@ http.route({
 
     try {
       const { accessToken, tokenType, todoistUserId, fullName } = await ctx.runAction(
-        internal.bookmarks.exchangeCodeForToken,
+        internal.todoist.exchangeCodeForToken,
         { code, redirectUri }
       );
 
@@ -99,7 +99,7 @@ http.route({
     const rawBody = await request.text();
 
     // Verify signature in Node action (has access to env vars)
-    const isValid = await ctx.runAction(internal.bookmarks.verifyWebhook, {
+    const isValid = await ctx.runAction(internal.todoist.verifyWebhook, {
       signature,
       rawBody,
     });

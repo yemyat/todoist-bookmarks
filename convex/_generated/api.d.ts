@@ -13,6 +13,7 @@ import type * as comments from "../comments.js";
 import type * as http from "../http.js";
 import type * as ideas from "../ideas.js";
 import type * as scheduler from "../scheduler.js";
+import type * as todoist from "../todoist.js";
 import type * as users from "../users.js";
 import type * as utils from "../utils.js";
 
@@ -28,6 +29,7 @@ declare const fullApi: ApiFromModules<{
   http: typeof http;
   ideas: typeof ideas;
   scheduler: typeof scheduler;
+  todoist: typeof todoist;
   users: typeof users;
   utils: typeof utils;
 }>;
