@@ -36,7 +36,7 @@ export const processNewBookmark = internalAction({
     description: v.string(),
     projectId: v.string(),
     accessToken: v.string(),
-    todoistUserId: v.string(),
+    userId: v.id("todoistUsers"), // Convex internal ID
   },
   handler: async (ctx, args) => {
     if (args.description.includes(PROCESSED_MARKER)) return;
@@ -79,7 +79,7 @@ REMEMBER: ALWAYS START WITH TLDR; Do not include any other fluff.
 
       // Save to database
       await ctx.runMutation(internal.users.saveTask, {
-        todoistUserId: args.todoistUserId,
+        userId: args.userId,
         todoistTaskId: args.taskId,
         type: "bookmark",
         title,
@@ -129,14 +129,16 @@ export const processNote = internalAction({
     taskId: v.string(),
     content: v.string(),
     accessToken: v.string(),
+    userId: v.id("todoistUsers"), // Convex internal ID for security
   },
   handler: async (ctx, args) => {
     // Skip if this is an agent reply (prevents infinite loop)
     if (args.content.includes(AGENT_MARKER)) return;
 
-    // Look up the task in our database
+    // Look up the task in our database with user ownership verification
     const task = await ctx.runQuery(internal.users.getTaskByTodoistId, {
       todoistTaskId: args.taskId,
+      userId: args.userId,
     });
 
     if (!task) {

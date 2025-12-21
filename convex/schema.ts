@@ -12,7 +12,8 @@ export default defineSchema({
 
   // Unified table for all processed Todoist tasks
   tasks: defineTable({
-    todoistUserId: v.string(),
+    userId: v.id("todoistUsers"), // Reference to todoistUsers table
+    todoistUserId: v.string(), // Keep for webhook lookups
     todoistTaskId: v.string(),
     type: v.union(v.literal("bookmark"), v.literal("idea")),
     // Common fields
@@ -23,7 +24,9 @@ export default defineSchema({
     // Bookmark-specific (optional)
     url: v.optional(v.string()),
   })
+    .index("by_user_id", ["userId"])
     .index("by_todoist_user_id", ["todoistUserId"])
     .index("by_todoist_task_id", ["todoistTaskId"])
-    .index("by_type", ["type"]),
+    .index("by_type", ["type"])
+    .index("by_user_and_type", ["userId", "type"]),
 });

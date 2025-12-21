@@ -17,7 +17,7 @@ export const processNewIdea = internalAction({
     description: v.string(),
     projectId: v.string(),
     accessToken: v.string(),
-    todoistUserId: v.string(),
+    userId: v.id("todoistUsers"), // Convex internal ID
   },
   handler: async (ctx, args) => {
     if (args.description.includes(PROCESSED_MARKER)) return;
@@ -90,7 +90,7 @@ ${ideaText}
 
       // Save to database
       await ctx.runMutation(internal.users.saveTask, {
-        todoistUserId: args.todoistUserId,
+        userId: args.userId,
         todoistTaskId: args.taskId,
         type: "idea",
         title: args.content,

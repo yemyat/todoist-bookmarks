@@ -15,13 +15,13 @@ export const scheduleProcessing = internalMutation({
     userId: v.string(), // Todoist user ID from webhook payload
   },
   handler: async (ctx, args) => {
-    // Look up the user's access token
-    const accessToken = await ctx.runQuery(internal.users.getAccessTokenByUserId, {
+    // Look up the user to get both access token and Convex _id
+    const user = await ctx.runQuery(internal.users.getUserByTodoistId, {
       todoistUserId: args.userId,
     });
 
-    if (!accessToken) {
-      console.warn(`No access token found for user ${args.userId}. User needs to authorize.`);
+    if (!user) {
+      console.warn(`No user found for ${args.userId}. User needs to authorize.`);
       return;
     }
 
@@ -39,8 +39,8 @@ export const scheduleProcessing = internalMutation({
           content: args.content,
           description: args.description,
           projectId: args.projectId,
-          accessToken,
-          todoistUserId: args.userId,
+          accessToken: user.accessToken,
+          userId: user._id,
         });
       } else if (isIdeaProject) {
         await ctx.scheduler.runAfter(0, internal.ideas.processNewIdea, {
@@ -48,8 +48,8 @@ export const scheduleProcessing = internalMutation({
           content: args.content,
           description: args.description,
           projectId: args.projectId,
-          accessToken,
-          todoistUserId: args.userId,
+          accessToken: user.accessToken,
+          userId: user._id,
         });
       }
       return;
@@ -61,14 +61,14 @@ export const scheduleProcessing = internalMutation({
           content: args.content,
           description: args.description,
           projectId: args.projectId,
-          accessToken,
+          accessToken: user.accessToken,
         });
       } else if (isIdeaProject) {
         await ctx.scheduler.runAfter(0, internal.ideas.handleIdeaCompleted, {
           content: args.content,
           description: args.description,
           projectId: args.projectId,
-          accessToken,
+          accessToken: user.accessToken,
         });
       }
       return;
@@ -86,12 +86,13 @@ export const scheduleNoteProcessing = internalMutation({
     userId: v.string(),
   },
   handler: async (ctx, args) => {
-    const accessToken = await ctx.runQuery(internal.users.getAccessTokenByUserId, {
+    // Look up the user to get both access token and Convex _id
+    const user = await ctx.runQuery(internal.users.getUserByTodoistId, {
       todoistUserId: args.userId,
     });
 
-    if (!accessToken) {
-      console.warn(`No access token found for user ${args.userId}. User needs to authorize.`);
+    if (!user) {
+      console.warn(`No user found for ${args.userId}. User needs to authorize.`);
       return;
     }
 
@@ -99,7 +100,8 @@ export const scheduleNoteProcessing = internalMutation({
       noteId: args.noteId,
       taskId: args.taskId,
       content: args.content,
-      accessToken,
+      accessToken: user.accessToken,
+      userId: user._id,
     });
   },
 });
