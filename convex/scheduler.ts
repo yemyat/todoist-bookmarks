@@ -21,7 +21,9 @@ export const scheduleProcessing = internalMutation({
     });
 
     if (!user) {
-      console.warn(`No user found for ${args.userId}. User needs to authorize.`);
+      console.warn(
+        `No user found for ${args.userId}. User needs to authorize.`,
+      );
       return;
     }
 
@@ -57,12 +59,16 @@ export const scheduleProcessing = internalMutation({
 
     if (args.eventName === "item:completed") {
       if (isBookmarkProject) {
-        await ctx.scheduler.runAfter(0, internal.bookmarks.handleTaskCompleted, {
-          content: args.content,
-          description: args.description,
-          projectId: args.projectId,
-          accessToken: user.accessToken,
-        });
+        await ctx.scheduler.runAfter(
+          0,
+          internal.bookmarks.handleTaskCompleted,
+          {
+            content: args.content,
+            description: args.description,
+            projectId: args.projectId,
+            accessToken: user.accessToken,
+          },
+        );
       } else if (isIdeaProject) {
         await ctx.scheduler.runAfter(0, internal.ideas.handleIdeaCompleted, {
           content: args.content,
@@ -78,9 +84,9 @@ export const scheduleProcessing = internalMutation({
   },
 });
 
-export const scheduleNoteProcessing = internalMutation({
+export const scheduleCommentProcessing = internalMutation({
   args: {
-    noteId: v.string(),
+    commentId: v.string(),
     taskId: v.string(),
     content: v.string(),
     userId: v.string(),
@@ -92,12 +98,14 @@ export const scheduleNoteProcessing = internalMutation({
     });
 
     if (!user) {
-      console.warn(`No user found for ${args.userId}. User needs to authorize.`);
+      console.warn(
+        `No user found for ${args.userId}. User needs to authorize.`,
+      );
       return;
     }
 
-    await ctx.scheduler.runAfter(0, internal.bookmarks.processNote, {
-      noteId: args.noteId,
+    await ctx.scheduler.runAfter(0, internal.comments.processComment, {
+      commentId: args.commentId,
       taskId: args.taskId,
       content: args.content,
       accessToken: user.accessToken,

@@ -123,10 +123,10 @@ http.route({
     // Handle note:added events (comments on tasks)
     if (event_name === "note:added") {
       if (!event_data.item_id) {
-        return new Response("Missing item_id for note event", { status: 400 });
+        return new Response("Missing item_id for comment event", { status: 400 });
       }
-      await ctx.runMutation(internal.scheduler.scheduleNoteProcessing, {
-        noteId: event_data.id,
+      await ctx.runMutation(internal.scheduler.scheduleCommentProcessing, {
+        commentId: event_data.id,
         taskId: event_data.item_id,
         content: event_data.content || "",
         userId: String(user_id),
