@@ -6,7 +6,8 @@ import { v } from "convex/values";
 import Firecrawl from "@mendable/firecrawl-js";
 import { generateText } from "ai";
 import { google } from "@ai-sdk/google";
-import { todoistRequest } from "./todoist";
+import { TodoistApi } from "@doist/todoist-api-typescript";
+import { customFetch } from "./todoist";
 
 const URL_REGEX = /https?:\/\/[^\s<>"{}|\\^`\[\]]+/gi;
 const FIRECRAWL_API_KEY = process.env.FIRECRAWL_API_KEY!;
@@ -24,6 +25,7 @@ export const processNewBookmark = internalAction({
   handler: async (ctx, args) => {
     if (args.description.includes(PROCESSED_MARKER)) return;
 
+    const api = new TodoistApi(args.accessToken, { customFetch });
     const url =
       args.content.match(URL_REGEX)?.[0] ||
       args.description.match(URL_REGEX)?.[0];
@@ -31,7 +33,7 @@ export const processNewBookmark = internalAction({
     if (!url) return;
 
     try {
-      await todoistRequest(args.accessToken, `tasks/${args.taskId}`, "POST", {
+      await api.updateTask(args.taskId, {
         description: `⏳ Crawling.\n\n🔗 ${url}`,
       });
 
@@ -71,14 +73,14 @@ REMEMBER: ALWAYS START WITH TLDR; Do not include any other fluff.
         url,
       });
 
-      await todoistRequest(args.accessToken, `tasks/${args.taskId}`, "POST", {
+      await api.updateTask(args.taskId, {
         content: title,
         description: `${PROCESSED_MARKER}\n\n${summary}\n\n---\n🔗 ${url}`,
       });
     } catch (error) {
       console.error(`Failed to process ${error}`);
 
-      await todoistRequest(args.accessToken, `tasks/${args.taskId}`, "POST", {
+      await api.updateTask(args.taskId, {
         description: `⚠️ Could not process bookmark. Check URL is accessible.\n\n🔗 ${url}`,
       });
     }
@@ -95,11 +97,11 @@ export const handleTaskCompleted = internalAction({
   handler: async (_ctx, args) => {
     if (!args.description.includes(PROCESSED_MARKER)) return;
 
-    // Create a new task with the same content/description but no due date
-    await todoistRequest(args.accessToken, "tasks", "POST", {
+    const api = new TodoistApi(args.accessToken, { customFetch });
+    await api.addTask({
       content: args.content,
       description: args.description,
-      project_id: args.projectId,
+      projectId: args.projectId,
     });
   },
 });

@@ -5,7 +5,8 @@ import { internal } from "./_generated/api";
 import { v } from "convex/values";
 import { generateText } from "ai";
 import { google } from "@ai-sdk/google";
-import { todoistRequest } from "./todoist";
+import { TodoistApi } from "@doist/todoist-api-typescript";
+import { customFetch } from "./todoist";
 
 const AGENT_MARKER = "🤖";
 
@@ -21,6 +22,8 @@ export const processComment = internalAction({
     // Skip if this is an agent reply (prevents infinite loop)
     if (args.content.includes(AGENT_MARKER)) return;
 
+    const api = new TodoistApi(args.accessToken, { customFetch });
+
     // Look up the task in our database with user ownership verification
     const task = await ctx.runQuery(internal.users.getTaskByTodoistId, {
       todoistTaskId: args.taskId,
@@ -28,8 +31,8 @@ export const processComment = internalAction({
     });
 
     if (!task) {
-      await todoistRequest(args.accessToken, "comments", "POST", {
-        task_id: args.taskId,
+      await api.addComment({
+        taskId: args.taskId,
         content: `${AGENT_MARKER} No saved task found.`,
       });
       return;
@@ -57,8 +60,8 @@ Instructions:
       prompt: args.content,
     });
 
-    await todoistRequest(args.accessToken, "comments", "POST", {
-      task_id: args.taskId,
+    await api.addComment({
+      taskId: args.taskId,
       content: `${AGENT_MARKER} ${answer}`,
     });
   },

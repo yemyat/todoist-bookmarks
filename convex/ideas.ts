@@ -6,7 +6,8 @@ import { v } from "convex/values";
 import { generateText, stepCountIs } from "ai";
 import { google } from "@ai-sdk/google";
 import { searchTool, extractTool } from "@parallel-web/ai-sdk-tools";
-import { todoistRequest } from "./todoist";
+import { TodoistApi } from "@doist/todoist-api-typescript";
+import { customFetch } from "./todoist";
 
 const PROCESSED_MARKER = "🤖 Feasibility Report";
 
@@ -22,14 +23,15 @@ export const processNewIdea = internalAction({
   handler: async (ctx, args) => {
     if (args.description.includes(PROCESSED_MARKER)) return;
 
+    const api = new TodoistApi(args.accessToken, { customFetch });
     const ideaText = `${args.content}\n${args.description}`;
 
     try {
-      await todoistRequest(args.accessToken, `tasks/${args.taskId}`, "POST", {
+      await api.updateTask(args.taskId, {
         description: `⏳ Researching existing solutions...\n\n${args.description}`,
       });
 
-      await todoistRequest(args.accessToken, `tasks/${args.taskId}`, "POST", {
+      await api.updateTask(args.taskId, {
         description: `⏳ Generating feasibility report...\n\n${args.description}`,
       });
 
@@ -98,13 +100,13 @@ ${ideaText}
         aiResponse: report,
       });
 
-      await todoistRequest(args.accessToken, `tasks/${args.taskId}`, "POST", {
+      await api.updateTask(args.taskId, {
         description: `${PROCESSED_MARKER}\n\n${report}\n\n---\n💡 Original idea: ${ideaText}`,
       });
     } catch (error) {
       console.error(`Failed to process idea: ${error}`);
 
-      await todoistRequest(args.accessToken, `tasks/${args.taskId}`, "POST", {
+      await api.updateTask(args.taskId, {
         description: `⚠️ Could not analyze idea.\n\n${args.description}`,
       });
     }
@@ -121,11 +123,11 @@ export const handleIdeaCompleted = internalAction({
   handler: async (_ctx, args) => {
     if (!args.description.includes(PROCESSED_MARKER)) return;
 
-    // Re-create the task when completed (same behavior as bookmarks)
-    await todoistRequest(args.accessToken, "tasks", "POST", {
+    const api = new TodoistApi(args.accessToken, { customFetch });
+    await api.addTask({
       content: args.content,
       description: args.description,
-      project_id: args.projectId,
+      projectId: args.projectId,
     });
   },
 });

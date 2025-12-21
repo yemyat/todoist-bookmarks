@@ -14,6 +14,7 @@
   },
   "dependencies": {
     "@ai-sdk/google": "^2.0.49",
+    "@doist/todoist-api-typescript": "^6.2.1",
     "@mendable/firecrawl-js": "^4.9.3",
     "@parallel-web/ai-sdk-tools": "^0.1.6",
     "ai": "^5.0.115",

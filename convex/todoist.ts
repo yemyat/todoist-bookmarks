@@ -3,6 +3,29 @@
 import { internalAction } from "./_generated/server";
 import { v } from "convex/values";
 import { createHmac } from "crypto";
+import { TodoistApi, getAuthToken, type CustomFetch } from "@doist/todoist-api-typescript";
+
+/**
+ * Wrapper around native fetch that converts the response to CustomFetchResponse format
+ * required by TodoistApi. This bypasses the undici Agent which causes issues in Convex.
+ */
+export const customFetch: CustomFetch = async (url, options) => {
+  const response = await fetch(url, options);
+
+  const headers: Record<string, string> = {};
+  response.headers.forEach((value, key) => {
+    headers[key] = value;
+  });
+
+  return {
+    ok: response.ok,
+    status: response.status,
+    statusText: response.statusText,
+    headers,
+    text: () => response.text(),
+    json: () => response.json(),
+  };
+};
 
 const TODOIST_CLIENT_ID = process.env.TODOIST_CLIENT_ID!;
 const TODOIST_CLIENT_SECRET = process.env.TODOIST_CLIENT_SECRET!;
@@ -46,78 +69,21 @@ export const exchangeCodeForToken = internalAction({
     redirectUri: v.string(),
   },
   handler: async (_ctx, args) => {
-    const tokenResponse = await fetch(
-      "https://todoist.com/oauth/access_token",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/x-www-form-urlencoded",
-        },
-        body: new URLSearchParams({
-          client_id: TODOIST_CLIENT_ID,
-          client_secret: TODOIST_CLIENT_SECRET,
-          code: args.code,
-          redirect_uri: args.redirectUri,
-        }).toString(),
-      },
-    );
-
-    if (!tokenResponse.ok) {
-      const errorText = await tokenResponse.text();
-      throw new Error(
-        `OAuth token exchange failed: ${tokenResponse.status} - ${errorText}`,
-      );
-    }
-
-    const tokenData = await tokenResponse.json();
-    const accessToken = tokenData.access_token;
-    const tokenType = tokenData.token_type;
-
-    const userResponse = await fetch("https://api.todoist.com/sync/v9/user", {
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-      },
+    const { accessToken, tokenType } = await getAuthToken({
+      clientId: TODOIST_CLIENT_ID,
+      clientSecret: TODOIST_CLIENT_SECRET,
+      code: args.code,
     });
 
-    if (!userResponse.ok) {
-      throw new Error(`Failed to fetch user info: ${userResponse.status}`);
-    }
-
-    const userData = await userResponse.json();
+    const api = new TodoistApi(accessToken, { customFetch });
+    const user = await api.getUser();
 
     return {
       accessToken,
       tokenType,
-      todoistUserId: userData.id,
-      email: userData.email,
-      fullName: userData.full_name,
+      todoistUserId: user.id,
+      email: user.email,
+      fullName: user.fullName,
     };
   },
 });
-
-export async function todoistRequest(
-  accessToken: string,
-  endpoint: string,
-  method: string,
-  body?: object,
-): Promise<any> {
-  const response = await fetch(`https://api.todoist.com/rest/v2/${endpoint}`, {
-    method,
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-      "Content-Type": "application/json",
-    },
-    body: body ? JSON.stringify(body) : undefined,
-  });
-
-  if (!response.ok) {
-    throw new Error(`Todoist API error: ${response.status}`);
-  }
-
-  if (
-    method === "GET" ||
-    response.headers.get("content-type")?.includes("application/json")
-  ) {
-    return response.json();
-  }
-}
