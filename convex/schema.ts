@@ -20,23 +20,11 @@ export default defineSchema({
     isActive: v.boolean(),
   }).index("by_user_and_project", ["userId", "projectId"]),
 
-  // Unified table for all processed Todoist tasks
+  // Processed Todoist tasks
   tasks: defineTable({
-    userId: v.id("todoistUsers"), // Reference to todoistUsers table
-    todoistUserId: v.string(), // Keep for webhook lookups
+    userId: v.id("todoistUsers"),
     todoistTaskId: v.string(),
-    type: v.union(v.literal("bookmark"), v.literal("idea")),
-    // Common fields
-    title: v.string(),
-    content: v.string(), // Scraped markdown for bookmarks, original description for ideas
-    aiResponse: v.string(), // Summary for bookmarks, feasibility report for ideas
-    processedAt: v.number(),
-    // Bookmark-specific (optional)
-    url: v.optional(v.string()),
   })
     .index("by_user_id", ["userId"])
-    .index("by_todoist_user_id", ["todoistUserId"])
-    .index("by_todoist_task_id", ["todoistTaskId"])
-    .index("by_type", ["type"])
-    .index("by_user_and_type", ["userId", "type"]),
+    .index("by_todoist_task_id", ["todoistTaskId"]),
 });

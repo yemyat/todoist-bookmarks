@@ -3,11 +3,18 @@
 import { internalAction } from "./_generated/server";
 import { internal } from "./_generated/api";
 import { v } from "convex/values";
-import { generateText } from "ai";
+import {
+  convertToModelMessages,
+  generateId,
+  generateText,
+  stepCountIs,
+  UIMessage,
+} from "ai";
 import { google } from "@ai-sdk/google";
 import { TodoistApi } from "@doist/todoist-api-typescript";
 import { customFetch } from "./todoist";
 import { AGENT_MARKER } from "./shared";
+import { extractTool, searchTool } from "@parallel-web/ai-sdk-tools";
 
 export const processComment = internalAction({
   args: {
@@ -24,7 +31,7 @@ export const processComment = internalAction({
     const api = new TodoistApi(args.accessToken, { customFetch });
 
     // Look up the task in our database with user ownership verification
-    const task = await ctx.runQuery(internal.users.getTaskByTodoistId, {
+    const task = await ctx.runQuery(internal.tasks.getTaskByTodoistId, {
       todoistTaskId: args.taskId,
       userId: args.userId,
     });
@@ -37,26 +44,60 @@ export const processComment = internalAction({
       return;
     }
 
+    // Fetch task details from Todoist
+    const todoistTask = await api.getTask(args.taskId);
+
+    // Fetch task notes/comments from Todoist
+    const taskNotes = await api.getComments({ taskId: args.taskId });
+    const taskNoteMessages: UIMessage[] = taskNotes.results
+      // start with the oldest to simulate conversation tree.
+      .sort(
+        (a, b) =>
+          new Date(a.postedAt).getTime() - new Date(b.postedAt).getTime(),
+      )
+      .map((tn) => ({
+        id: tn.id,
+        role: tn.content.includes(AGENT_MARKER) ? "assistant" : "user",
+        parts: [{ type: "text", text: tn.content }],
+      }));
+
     // Generate answer based on task content
     const { text: answer } = await generateText({
-      model: google("gemini-2.0-flash"),
-      system: `You are a helpful assistant answering questions about a saved ${task.type === "bookmark" ? "article" : "idea"}.
+      model: google("gemini-3-flash-preview"),
+      tools: {
+        "web-search": searchTool,
+        "web-extract": extractTool,
+      },
+      stopWhen: stepCountIs(5),
+      system: `You are a helpful assistant answering questions about a saved task.
 
-Title: ${task.title}
-${task.url ? `URL: ${task.url}` : ""}
+Title: ${todoistTask.content}
 
-AI Summary/Report:
-${task.aiResponse}
+Content:
+${todoistTask.description}
 
-Full Content:
-${task.content}
-
-Instructions:
-- Answer the user's question based on the article content above
+# Instructions:
+- Answer the user's question based on the content above
 - Be concise and direct
-- If the answer isn't in the article, say so
-- Use conversational English`,
-      prompt: args.content,
+- If the answer isn't in the content, say so
+- Use conversational English
+
+# Tool Access
+- You have tools to search the web and to extract information from web pages.
+- Use this to be more helpful to the user within the context of the task.
+`,
+      messages: convertToModelMessages([
+        ...taskNoteMessages,
+        {
+          role: "user",
+          parts: [
+            {
+              type: "text",
+              text: args.content,
+            },
+          ],
+        },
+      ]),
     });
 
     await api.addComment({

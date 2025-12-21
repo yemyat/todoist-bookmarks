@@ -51,13 +51,9 @@ export const processTask = internalAction({
         prompt: taskInput,
       });
 
-      await ctx.runMutation(internal.users.saveTask, {
+      await ctx.runMutation(internal.tasks.saveTask, {
         userId: args.userId,
         todoistTaskId: args.taskId,
-        type: "bookmark",
-        title: args.content,
-        content: args.description,
-        aiResponse: response,
       });
 
       await api.updateTask(args.taskId, {

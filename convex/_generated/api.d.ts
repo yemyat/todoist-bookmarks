@@ -15,6 +15,7 @@ import type * as comments from "../comments.js";
 import type * as http from "../http.js";
 import type * as scheduler from "../scheduler.js";
 import type * as shared from "../shared.js";
+import type * as tasks from "../tasks.js";
 import type * as todoist from "../todoist.js";
 import type * as users from "../users.js";
 
@@ -32,6 +33,7 @@ declare const fullApi: ApiFromModules<{
   http: typeof http;
   scheduler: typeof scheduler;
   shared: typeof shared;
+  tasks: typeof tasks;
   todoist: typeof todoist;
   users: typeof users;
 }>;
