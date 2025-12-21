@@ -6,7 +6,7 @@ import { v } from "convex/values";
 import Firecrawl from "@mendable/firecrawl-js";
 import { generateText } from "ai";
 import { google } from "@ai-sdk/google";
-import { todoistRequest } from "./utils";
+import { todoistRequest } from "./todoist";
 
 const URL_REGEX = /https?:\/\/[^\s<>"{}|\\^`\[\]]+/gi;
 const FIRECRAWL_API_KEY = process.env.FIRECRAWL_API_KEY!;
@@ -103,5 +103,3 @@ export const handleTaskCompleted = internalAction({
     });
   },
 });
-
-

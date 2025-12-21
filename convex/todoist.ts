@@ -46,22 +46,27 @@ export const exchangeCodeForToken = internalAction({
     redirectUri: v.string(),
   },
   handler: async (_ctx, args) => {
-    const tokenResponse = await fetch("https://todoist.com/oauth/access_token", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/x-www-form-urlencoded",
+    const tokenResponse = await fetch(
+      "https://todoist.com/oauth/access_token",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
+        body: new URLSearchParams({
+          client_id: TODOIST_CLIENT_ID,
+          client_secret: TODOIST_CLIENT_SECRET,
+          code: args.code,
+          redirect_uri: args.redirectUri,
+        }).toString(),
       },
-      body: new URLSearchParams({
-        client_id: TODOIST_CLIENT_ID,
-        client_secret: TODOIST_CLIENT_SECRET,
-        code: args.code,
-        redirect_uri: args.redirectUri,
-      }).toString(),
-    });
+    );
 
     if (!tokenResponse.ok) {
       const errorText = await tokenResponse.text();
-      throw new Error(`OAuth token exchange failed: ${tokenResponse.status} - ${errorText}`);
+      throw new Error(
+        `OAuth token exchange failed: ${tokenResponse.status} - ${errorText}`,
+      );
     }
 
     const tokenData = await tokenResponse.json();
@@ -89,3 +94,30 @@ export const exchangeCodeForToken = internalAction({
     };
   },
 });
+
+export async function todoistRequest(
+  accessToken: string,
+  endpoint: string,
+  method: string,
+  body?: object,
+): Promise<any> {
+  const response = await fetch(`https://api.todoist.com/rest/v2/${endpoint}`, {
+    method,
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      "Content-Type": "application/json",
+    },
+    body: body ? JSON.stringify(body) : undefined,
+  });
+
+  if (!response.ok) {
+    throw new Error(`Todoist API error: ${response.status}`);
+  }
+
+  if (
+    method === "GET" ||
+    response.headers.get("content-type")?.includes("application/json")
+  ) {
+    return response.json();
+  }
+}

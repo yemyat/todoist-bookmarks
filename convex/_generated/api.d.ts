@@ -15,7 +15,6 @@ import type * as ideas from "../ideas.js";
 import type * as scheduler from "../scheduler.js";
 import type * as todoist from "../todoist.js";
 import type * as users from "../users.js";
-import type * as utils from "../utils.js";
 
 import type {
   ApiFromModules,
@@ -31,7 +30,6 @@ declare const fullApi: ApiFromModules<{
   scheduler: typeof scheduler;
   todoist: typeof todoist;
   users: typeof users;
-  utils: typeof utils;
 }>;
 
 /**

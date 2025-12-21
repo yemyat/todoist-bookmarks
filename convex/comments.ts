@@ -5,7 +5,7 @@ import { internal } from "./_generated/api";
 import { v } from "convex/values";
 import { generateText } from "ai";
 import { google } from "@ai-sdk/google";
-import { todoistRequest } from "./utils";
+import { todoistRequest } from "./todoist";
 
 const AGENT_MARKER = "🤖";
 

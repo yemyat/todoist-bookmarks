@@ -5,8 +5,8 @@ import { internal } from "./_generated/api";
 import { v } from "convex/values";
 import { generateText, stepCountIs } from "ai";
 import { google } from "@ai-sdk/google";
-import { searchTool, extractTool } from '@parallel-web/ai-sdk-tools';
-import { todoistRequest } from "./utils";
+import { searchTool, extractTool } from "@parallel-web/ai-sdk-tools";
+import { todoistRequest } from "./todoist";
 
 const PROCESSED_MARKER = "🤖 Feasibility Report";
 
@@ -36,8 +36,8 @@ export const processNewIdea = internalAction({
       const { text: report } = await generateText({
         model: google("gemini-3-flash-preview"),
         tools: {
-          'web-search': searchTool,
-          'web-extract': extractTool,
+          "web-search": searchTool,
+          "web-extract": extractTool,
         },
         stopWhen: stepCountIs(20),
         system: `You are a startup advisor and partner at YCombinator. You help entrepreneurs quickly validate ideas by providing concise feasibility reports.
@@ -129,5 +129,3 @@ export const handleIdeaCompleted = internalAction({
     });
   },
 });
-
-
