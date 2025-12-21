@@ -61,6 +61,12 @@ export const processComment = internalAction({
         parts: [{ type: "text", text: tn.content }],
       }));
 
+    // Create a "typing..." indicator comment first
+    const typingComment = await api.addComment({
+      taskId: args.taskId,
+      content: `${AGENT_MARKER} is typing...`,
+    });
+
     // Generate answer based on task content
     const { text: answer } = await generateText({
       model: google("gemini-3-flash-preview"),
@@ -100,8 +106,8 @@ ${todoistTask.description}
       ]),
     });
 
-    await api.addComment({
-      taskId: args.taskId,
+    // Update the typing comment with the actual response
+    await api.updateComment(typingComment.id, {
       content: `${AGENT_MARKER} ${answer}`,
     });
   },

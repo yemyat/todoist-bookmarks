@@ -10,7 +10,8 @@ import { TodoistApi } from "@doist/todoist-api-typescript";
 import { customFetch } from "./todoist";
 import { AGENT_MARKER } from "./shared";
 
-const PROCESSED_MARKER = `${AGENT_MARKER} Response`;
+const PROCESSED_MARKER = `${AGENT_MARKER}: Response`;
+const PROCESSING_MARKER = `${AGENT_MARKER}: ⏳ Processing...`;
 
 export const processTask = internalAction({
   args: {
@@ -23,7 +24,11 @@ export const processTask = internalAction({
     agentId: v.id("agents"),
   },
   handler: async (ctx, args) => {
-    if (args.description.includes(PROCESSED_MARKER)) return;
+    if (
+      args.description.includes(PROCESSED_MARKER) ||
+      args.description.includes(PROCESSING_MARKER)
+    )
+      return;
 
     const agent = await ctx.runQuery(internal.agentDb.getAgentById, {
       agentId: args.agentId,
@@ -37,7 +42,7 @@ export const processTask = internalAction({
 
     try {
       await api.updateTask(args.taskId, {
-        description: `⏳ Processing...\n\n${args.description}`,
+        description: PROCESSING_MARKER,
       });
 
       const { text: response } = await generateText({

@@ -75,13 +75,13 @@ npx convex env set FIRECRAWL_API_KEY "your_firecrawl_api_key"
 npx convex env set GOOGLE_GENERATIVE_AI_API_KEY "your_google_api_key"
 ```
 
-| Variable | Description |
-|----------|-------------|
-| `TODOIST_CLIENT_ID` | From Todoist App Console |
-| `TODOIST_CLIENT_SECRET` | From Todoist App Console (used for OAuth token exchange and webhook signature verification) |
-| `TODOIST_PROJECT_ID` | The Todoist project ID where bookmarks are stored |
-| `FIRECRAWL_API_KEY` | API key from [Firecrawl](https://firecrawl.dev) |
-| `GOOGLE_GENERATIVE_AI_API_KEY` | API key from [Google AI Studio](https://aistudio.google.com) |
+| Variable                       | Description                                                                                 |
+| ------------------------------ | ------------------------------------------------------------------------------------------- |
+| `TODOIST_CLIENT_ID`            | From Todoist App Console                                                                    |
+| `TODOIST_CLIENT_SECRET`        | From Todoist App Console (used for OAuth token exchange and webhook signature verification) |
+| `TODOIST_PROJECT_ID`           | The Todoist project ID where bookmarks are stored                                           |
+| `FIRECRAWL_API_KEY`            | API key from [Firecrawl](https://firecrawl.dev)                                             |
+| `GOOGLE_GENERATIVE_AI_API_KEY` | API key from [Google AI Studio](https://aistudio.google.com)                                |
 
 ### 7. Register Todoist Webhook
 
@@ -90,6 +90,7 @@ In the Todoist App Console, configure webhooks:
 1. Set the webhook URL to: `https://your-project-123.convex.site/webhook/todoist`
 2. Subscribe to these events:
    - `item:added`
+   - `item:updated`
    - `item:completed`
 
 ### 8. Authorize Your Todoist Account
@@ -101,6 +102,7 @@ https://your-project-123.convex.site/oauth/todoist/authorize
 ```
 
 This grants the app permission to:
+
 - Read and write your tasks
 - Receive webhook events for your account
 
@@ -134,16 +136,19 @@ This app supports multiple users. Each user who authorizes via the OAuth flow ge
 ## Troubleshooting
 
 **Webhook not triggering?**
+
 - Ensure you've completed the OAuth authorization step
 - Check that webhook events are configured in Todoist App Console
 - Verify the webhook URL is correct
 
 **Task not being processed?**
+
 - Make sure the task is in the correct project (matching `TODOIST_PROJECT_ID`)
 - Check that the task contains a valid URL
 - Look at Convex logs for errors
 
 **OAuth callback failing?**
+
 - Verify the redirect URI in Todoist App Console matches exactly
 - Check that `TODOIST_CLIENT_ID` and `TODOIST_CLIENT_SECRET` are set correctly
 

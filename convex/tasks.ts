@@ -26,9 +26,36 @@ export const saveTask = internalMutation({
     todoistTaskId: v.string(),
   },
   handler: async (ctx, args) => {
+    const existing = await ctx.db
+      .query("tasks")
+      .withIndex("by_todoist_task_id", (q) => q.eq("todoistTaskId", args.todoistTaskId))
+      .unique();
+
+    if (existing) {
+      return existing._id;
+    }
+
     return await ctx.db.insert("tasks", {
       userId: args.userId,
       todoistTaskId: args.todoistTaskId,
     });
+  },
+});
+
+export const deleteTaskByTodoistId = internalMutation({
+  args: {
+    todoistTaskId: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const task = await ctx.db
+      .query("tasks")
+      .withIndex("by_todoist_task_id", (q) => q.eq("todoistTaskId", args.todoistTaskId))
+      .unique();
+
+    if (task) {
+      await ctx.db.delete(task._id);
+      return true;
+    }
+    return false;
   },
 });

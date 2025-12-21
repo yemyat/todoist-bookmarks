@@ -134,6 +134,17 @@ http.route({
       return new Response("OK", { status: 200 });
     }
 
+    // Handle item:deleted events (only need task id)
+    if (event_name === "item:deleted") {
+      if (!event_data.id) {
+        return new Response("Missing task id for delete event", { status: 400 });
+      }
+      await ctx.runMutation(internal.tasks.deleteTaskByTodoistId, {
+        todoistTaskId: String(event_data.id),
+      });
+      return new Response("OK", { status: 200 });
+    }
+
     // Handle item events (tasks)
     if (!event_data.id || !event_data.project_id) {
       return new Response("Missing fields for item event", { status: 400 });

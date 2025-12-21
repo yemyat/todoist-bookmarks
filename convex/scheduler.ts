@@ -33,7 +33,7 @@ export const scheduleProcessing = internalMutation({
       return;
     }
 
-    if (args.eventName === "item:added") {
+    if (args.eventName === "item:added" || args.eventName === "item:updated") {
       await ctx.scheduler.runAfter(0, internal.agent.processTask, {
         taskId: args.taskId,
         content: args.content,
