@@ -8,11 +8,13 @@
  * @module
  */
 
-import type * as bookmarks from "../bookmarks.js";
+import type * as agent from "../agent.js";
+import type * as agentDb from "../agentDb.js";
+import type * as backfill from "../backfill.js";
 import type * as comments from "../comments.js";
 import type * as http from "../http.js";
-import type * as ideas from "../ideas.js";
 import type * as scheduler from "../scheduler.js";
+import type * as shared from "../shared.js";
 import type * as todoist from "../todoist.js";
 import type * as users from "../users.js";
 
@@ -23,11 +25,13 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
-  bookmarks: typeof bookmarks;
+  agent: typeof agent;
+  agentDb: typeof agentDb;
+  backfill: typeof backfill;
   comments: typeof comments;
   http: typeof http;
-  ideas: typeof ideas;
   scheduler: typeof scheduler;
+  shared: typeof shared;
   todoist: typeof todoist;
   users: typeof users;
 }>;

@@ -2,9 +2,6 @@ import { internalMutation } from "./_generated/server";
 import { internal } from "./_generated/api";
 import { v } from "convex/values";
 
-const TODOIST_BOOKMARK_PROJECT_ID = process.env.TODOIST_BOOKMARK_PROJECT_ID!;
-const TODOIST_IDEA_PROJECT_ID = process.env.TODOIST_IDEA_PROJECT_ID!;
-
 export const scheduleProcessing = internalMutation({
   args: {
     eventName: v.string(),
@@ -15,7 +12,6 @@ export const scheduleProcessing = internalMutation({
     userId: v.string(), // Todoist user ID from webhook payload
   },
   handler: async (ctx, args) => {
-    // Look up the user to get both access token and Convex _id
     const user = await ctx.runQuery(internal.users.getUserByTodoistId, {
       todoistUserId: args.userId,
     });
@@ -27,54 +23,37 @@ export const scheduleProcessing = internalMutation({
       return;
     }
 
-    const isBookmarkProject = args.projectId === TODOIST_BOOKMARK_PROJECT_ID;
-    const isIdeaProject = args.projectId === TODOIST_IDEA_PROJECT_ID;
+    // Look up agent config for this project
+    const agent = await ctx.runQuery(internal.agentDb.getAgentByProject, {
+      userId: user._id,
+      projectId: args.projectId,
+    });
 
-    if (!isBookmarkProject && !isIdeaProject) {
+    if (!agent || !agent.isActive) {
       return;
     }
 
     if (args.eventName === "item:added") {
-      if (isBookmarkProject) {
-        await ctx.scheduler.runAfter(0, internal.bookmarks.processNewBookmark, {
-          taskId: args.taskId,
-          content: args.content,
-          description: args.description,
-          projectId: args.projectId,
-          accessToken: user.accessToken,
-          userId: user._id,
-        });
-      } else if (isIdeaProject) {
-        await ctx.scheduler.runAfter(0, internal.ideas.processNewIdea, {
-          taskId: args.taskId,
-          content: args.content,
-          description: args.description,
-          projectId: args.projectId,
-          accessToken: user.accessToken,
-          userId: user._id,
-        });
-      }
+      await ctx.scheduler.runAfter(0, internal.agent.processTask, {
+        taskId: args.taskId,
+        content: args.content,
+        description: args.description,
+        projectId: args.projectId,
+        accessToken: user.accessToken,
+        userId: user._id,
+        agentId: agent._id,
+      });
       return;
     }
 
     if (args.eventName === "item:completed") {
-      if (isBookmarkProject) {
-        await ctx.scheduler.runAfter(
-          0,
-          internal.bookmarks.handleTaskCompleted,
-          {
-            content: args.content,
-            description: args.description,
-            projectId: args.projectId,
-            accessToken: user.accessToken,
-          },
-        );
-      } else if (isIdeaProject) {
-        await ctx.scheduler.runAfter(0, internal.ideas.handleIdeaCompleted, {
+      if (agent.recreateOnComplete) {
+        await ctx.scheduler.runAfter(0, internal.agent.handleTaskCompleted, {
           content: args.content,
           description: args.description,
           projectId: args.projectId,
           accessToken: user.accessToken,
+          agentName: agent.name,
         });
       }
       return;
