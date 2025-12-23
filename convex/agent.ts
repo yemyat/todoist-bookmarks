@@ -46,7 +46,7 @@ export const processTask = internalAction({
       });
 
       const { text: response } = await generateText({
-        model: google("gemini-3-flash-preview"),
+        model: google("gemini-2.5-flash"),
         tools: {
           "web-search": searchTool,
           "web-extract": extractTool,
