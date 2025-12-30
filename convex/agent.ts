@@ -45,7 +45,8 @@ export const processTask = internalAction({
         description: PROCESSING_MARKER,
       });
 
-      const { text: response } = await generateText({
+      // Step 1: Generate description
+      const { text: descriptionResponse } = await generateText({
         model: google("gemini-2.5-flash"),
         tools: {
           "web-search": searchTool,
@@ -56,13 +57,21 @@ export const processTask = internalAction({
         prompt: taskInput,
       });
 
+      // Step 2: Generate title based on description
+      const { text: titleResponse } = await generateText({
+        model: google("gemini-2.5-flash"),
+        system: `You are a task title generator. Generate a concise, clear title (max 100 characters) based on the task description provided. Return only the title, nothing else.`,
+        prompt: `Based on this task description, generate an improved title:\n\n${descriptionResponse}`,
+      });
+
       await ctx.runMutation(internal.tasks.saveTask, {
         userId: args.userId,
         todoistTaskId: args.taskId,
       });
 
       await api.updateTask(args.taskId, {
-        description: `${PROCESSED_MARKER}\n\n${response}\n\n---\n💬 Original: ${taskInput}`,
+        content: titleResponse.trim(),
+        description: `${PROCESSED_MARKER}\n\n${descriptionResponse}\n\n---\n💬 Original: ${taskInput}`,
       });
     } catch (error) {
       console.error(`Failed to process task: ${error}`);
