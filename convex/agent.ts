@@ -25,6 +25,8 @@ export const processTask = internalAction({
   },
   handler: async (ctx, args) => {
     if (
+      args.content.includes(PROCESSED_MARKER) ||
+      args.content.includes(PROCESSING_MARKER) ||
       args.description.includes(PROCESSED_MARKER) ||
       args.description.includes(PROCESSING_MARKER)
     )
@@ -70,7 +72,7 @@ export const processTask = internalAction({
       });
 
       await api.updateTask(args.taskId, {
-        content: titleResponse.trim(),
+        content: `${PROCESSED_MARKER} ${titleResponse.trim()}`,
         description: `${PROCESSED_MARKER}\n\n${descriptionResponse}\n\n---\n💬 Original: ${taskInput}`,
       });
     } catch (error) {
